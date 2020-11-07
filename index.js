@@ -11,16 +11,16 @@ bot.on("channel_post", (msg) => {
     bot.sendMessage(
         msg.chat.id,"❓", { reply_to_message_id: msg.message_id, reply_markup: {inline_keyboard: [
             [
-                {text: "😍 0", callback_data: "a"},
-                {text: "🤮 0", callback_data: "b"},
+                {text: "😍 0", callback_data: '{"id": 1, "users": [] }'},
+                {text: "🤮 0", callback_data: '{"id": 2, "users": [] }'},
             ],
             [
-                {text: "👍 0", callback_data: "c"},
-                {text: "👎 0", callback_data: "d"},
+                {text: "👍 0", callback_data: '{"id": 3, "users": [] }'},
+                {text: "👎 0", callback_data: '{"id": 4, "users": [] }'},
             ],
             [
-                {text: "🔥 0", callback_data: "e"},
-                {text: "🤷 0", callback_data: "f"},
+                {text: "🔥 0", callback_data: '{"id": 5, "users": [] }'},
+                {text: "🤷 0", callback_data: '{"id": 6, "users": [] }'},
             ]
         ]}}
     );
@@ -34,10 +34,18 @@ bot.on("callback_query", (query) => {
                 Object.entries(cell).forEach(keyboard => {
                     keyboard.forEach(button => {
                         if(typeof(button) == "object") {
-                            if(query.data == button.callback_data) {
-                                var textparts = button.text.split(" ");
-                                textparts[1]++
-                                button.text = textparts.join(" ")
+                            var data = JSON.parse(button.callback_data);
+                            var textparts = button.text.split(" ");
+                            if(JSON.parse(query.data).id == data.id) {
+                                if(data.users.includes(query.from.id)) {
+                                    data.users.splice(data.users.indexOf(query.from.id));
+                                    textparts[1]--;
+                                } else {
+                                    data.users.push(query.from.id);
+                                    textparts[1]++;
+                                }
+                                button.callback_data = JSON.stringify(data);
+                                button.text = textparts.join(" ");
                             }
                         }
                     });
