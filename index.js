@@ -35,33 +35,39 @@ bot.on("channel_post", (msg) => {
     );
 });
 
-bot.on("callback_query", (query) => {
-    var oldkeys = query.message.reply_markup.inline_keyboard;
-    Object.entries(oldkeys).forEach(entry => {
-        entry.forEach(row => {
-            if (typeof (row) == "object") Object.entries(row).forEach(cell => {
-                Object.entries(cell).forEach(keyboard => {
-                    keyboard.forEach(button => {
-                        if (typeof (button) == "object") {
-                            var data = JSON.parse(button.callback_data);
-                            var textparts = button.text.split(" ");
-                            if (JSON.parse(query.data).id == data.id) {
-                                if (data.users.includes(query.from.id)) {
-                                    data.users.splice(data.users.indexOf(query.from.id));
-                                    textparts[1]--;
-                                } else {
-                                    data.users.push(query.from.id);
-                                    textparts[1]++;
+bot.on("callback_query", async (query) => {
+    const allowed_users = ['creator', 'administrator']
+    const user_status = (await (bot.getChatMember(query.message.chat.id, query.from.id))).status
+    if(allowed_users.indexOf(user_status) == -1) {
+        bot.answerCallbackQuery(query.id, {text: `Your status is ${user_status} but you need to be ${allowed_users.join(" or ")}`});
+    } else {
+        var oldkeys = query.message.reply_markup.inline_keyboard;
+        Object.entries(oldkeys).forEach(entry => {
+            entry.forEach(row => {
+                if (typeof (row) == "object") Object.entries(row).forEach(cell => {
+                    Object.entries(cell).forEach(keyboard => {
+                        keyboard.forEach(button => {
+                            if (typeof (button) == "object") {
+                                var data = JSON.parse(button.callback_data);
+                                var textparts = button.text.split(" ");
+                                if (JSON.parse(query.data).id == data.id) {
+                                    if (data.users.includes(query.from.id)) {
+                                        data.users.splice(data.users.indexOf(query.from.id));
+                                        textparts[1]--;
+                                    } else {
+                                        data.users.push(query.from.id);
+                                        textparts[1]++;
+                                    }
+                                    button.callback_data = JSON.stringify(data);
+                                    button.text = textparts.join(" ");
                                 }
-                                button.callback_data = JSON.stringify(data);
-                                button.text = textparts.join(" ");
                             }
-                        }
+                        });
                     });
                 });
             });
         });
-    });
-    bot.editMessageReplyMarkup({ inline_keyboard: oldkeys }, { chat_id: query.message.chat.id, message_id: query.message.message_id });
-    bot.answerCallbackQuery(query.id)
+        bot.editMessageReplyMarkup({ inline_keyboard: oldkeys }, { chat_id: query.message.chat.id, message_id: query.message.message_id });
+        bot.answerCallbackQuery(query.id)
+    }
 })
