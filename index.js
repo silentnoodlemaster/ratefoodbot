@@ -42,31 +42,24 @@ bot.on("callback_query", async (query) => {
         bot.answerCallbackQuery(query.id, {text: `Your status is ${user_status} but you need to be ${allowed_users.join(" or ")}`});
     } else {
         var oldkeys = query.message.reply_markup.inline_keyboard;
-        Object.entries(oldkeys).forEach(entry => {
-            entry.forEach(row => {
-                if (typeof (row) == "object") Object.entries(row).forEach(cell => {
-                    Object.entries(cell).forEach(keyboard => {
-                        keyboard.forEach(button => {
-                            if (typeof (button) == "object") {
-                                var data = JSON.parse(button.callback_data);
-                                var textparts = button.text.split(" ");
-                                if (JSON.parse(query.data).id == data.id) {
-                                    if (data.users.includes(query.from.id)) {
-                                        data.users.splice(data.users.indexOf(query.from.id));
-                                        textparts[1]--;
-                                    } else {
-                                        data.users.push(query.from.id);
-                                        textparts[1]++;
-                                    }
-                                    button.callback_data = JSON.stringify(data);
-                                    button.text = textparts.join(" ");
-                                }
-                            }
-                        });
-                    });
-                });
-            });
-        });
+        for(let button of oldkeys.flat()) {
+            if(query.data == button.callback_data && button.text.includes(' ')) {
+                let data = JSON.parse(button.callback_data);
+                let number = parseInt(button.text.split(" ")[1],10);
+                const emoji = button.text.split(" ")[0];
+                if (JSON.parse(query.data).id == data.id) {
+                    if (data.users.includes(query.from.id)) {
+                        data.users.splice(data.users.indexOf(query.from.id));
+                        number--;
+                    } else {
+                        data.users.push(query.from.id);
+                        number++;
+                    }
+                    button.callback_data = JSON.stringify(data);
+                    button.text = `${emoji} ${number}`;
+                }
+            }
+        }
         bot.editMessageReplyMarkup({ inline_keyboard: oldkeys }, { chat_id: query.message.chat.id, message_id: query.message.message_id });
         bot.answerCallbackQuery(query.id)
     }
