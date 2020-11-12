@@ -4,6 +4,8 @@ import {
   UpdateType,
 } from "https://deno.land/x/telegram_bot_api/mod.ts";
 
+import handleError from "./errorhandling.ts";
+
 const TOKEN = Deno.env.get("TELEGRAM_TOKEN");
 if (!TOKEN) throw new Error("No token provided");
 const bot = new TelegramBot(TOKEN);
@@ -34,6 +36,8 @@ bot.on(UpdateType.ChannelPost, ({ channel_post }) => {
         ],
       ],
     },
+  }).catch((e: Error) => {
+    handleError(e, channel_post.chat, bot);
   });
 });
 
@@ -50,6 +54,8 @@ bot.on(UpdateType.CallbackQuery, async ({ callback_query }) => {
       text: `Your status is ${userStatus} but you need to be ${
         allowedUsers.join(" or ")
       }`,
+    }).catch((e: Error) => {
+      handleError(e, callback_query.message!.chat, bot);
     });
   } else {
     for (
@@ -82,9 +88,13 @@ bot.on(UpdateType.CallbackQuery, async ({ callback_query }) => {
     reply_markup: {
       inline_keyboard: oldInlineKeyboard,
     },
+  }).catch((e: Error) => {
+    handleError(e, callback_query.message!.chat, bot);
   });
   bot.answerCallbackQuery({
     callback_query_id: callback_query.id,
+  }).catch((e: Error) => {
+    handleError(e, callback_query.message!.chat, bot);
   });
 });
 bot.run({
